@@ -1,9 +1,25 @@
-[gd_scene load_steps=2 format=3 uid="uid://c0j58gqjq8u8h"]
+[gd_scene format=3 uid="uid://c0j58gqjq8u8h"]
 
-[ext_resource type="Texture2D" path="res://icon.svg" id="1"]
+[ext_resource type="Script" uid="uid://b1nx5ud7tosrm" path="res://main.gd" id="1_ig7tw"]
 
-[node name="Main" type="Node2D"]
+[sub_resource type="DampedSpringParameters" id="DampedSpringParameters_eb6md"]
+time = 0.819
 
-[node name="GDExample" type="GDExample" parent="."]
-texture = ExtResource("1")
-position = Vector2(280, 160)
+[sub_resource type="SphereMesh" id="SphereMesh_m0nv1"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_h2yge"]
+
+[node name="Main" type="Node2D" unique_id=1336034270]
+script = ExtResource("1_ig7tw")
+spring_params = SubResource("DampedSpringParameters_eb6md")
+
+[node name="DragSphere" type="MeshInstance2D" parent="." unique_id=1555440949]
+position = Vector2(532, 229.00002)
+scale = Vector2(30, 30)
+mesh = SubResource("SphereMesh_m0nv1")
+
+[node name="FollowSphere" type="MeshInstance2D" parent="." unique_id=185257629]
+position = Vector2(603, 284)
+scale = Vector2(30, 30)
+mesh = SubResource("SphereMesh_m0nv1")
+texture = SubResource("NoiseTexture2D_h2yge")

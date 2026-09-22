@@ -30,3 +30,20 @@ library = env.SharedLibrary(
 
 # Selects the shared library as the default target.
 Default(library)
+
+# --- Unit tests (tests/) ---
+# The spring integration math (src/damped_spring_math.h) is a header-only,
+# engine-independent template, so its tests build and run as a plain native
+# program -- no godot-cpp linking, no running Godot process required.
+# Uses its own native Environment rather than the (possibly cross-compiling)
+# `env` above, since the test binary needs to run on this machine.
+test_env = Environment()
+test_env.Append(CPPPATH=["src/"])
+if test_env["CXX"] == "cl":
+    test_env.Append(CXXFLAGS=["/std:c++17"])
+else:
+    test_env.Append(CXXFLAGS=["-std=c++17"])
+
+test_program = test_env.Program("tests/bin/test_damped_spring", Glob("tests/*.cpp"))
+run_tests = test_env.Alias("tests", test_program, test_program[0].abspath)
+AlwaysBuild(run_tests)

@@ -1,6 +1,9 @@
 #include "register_types.h"
 
-#include "gdexample.h"
+#include "damped_spring.h"
+#include "damped_spring_2d.h"
+#include "damped_spring_3d.h"
+#include "damped_spring_parameters.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
@@ -13,7 +16,10 @@ void initialize_example_module(ModuleInitializationLevel p_level) {
 		return;
 	}
 
-	GDREGISTER_CLASS(GDExample);
+	GDREGISTER_CLASS(DampedSpringParameters);
+	GDREGISTER_CLASS(DampedSpring);
+	GDREGISTER_CLASS(DampedSpring2D);
+	GDREGISTER_CLASS(DampedSpring3D);
 }
 
 void uninitialize_example_module(ModuleInitializationLevel p_level) {

@@ -9,6 +9,9 @@ project/bin/*.so
 project/bin/*.dylib
 project/bin/*.dll
 
+# Test binaries
+tests/bin/
+
 # godot-cpp build output
 godot-cpp/bin/
 godot-cpp/gen/
@@ -16,3 +19,6 @@ godot-cpp/gen/
 # Godot editor cache/import data
 project/.godot/
 project/icon.svg.import
+
+# Sublime
+*.sublime-workspace
