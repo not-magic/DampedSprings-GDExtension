@@ -10,8 +10,6 @@ class DampedSpring : public Object {
 	GDCLASS(DampedSpring, Object)
 
 private:
-	double value;
-	double target_value;
 	double velocity;
 
 protected:
@@ -21,16 +19,10 @@ public:
 	DampedSpring();
 	~DampedSpring();
 
-	void set_value(const double p_value);
-	double get_value() const;
-
-	void set_target_value(const double p_target_value);
-	double get_target_value() const;
-
 	void set_velocity(const double p_velocity);
 	double get_velocity() const;
 
-	double update(const double p_delta, const Ref<DampedSpringParameters> &p_parameters);
+	double update(const double p_delta, const double p_value, const double p_target_value, const Ref<DampedSpringParameters> &p_parameters);
 };
 
 } // namespace godot

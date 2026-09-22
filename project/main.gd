@@ -9,11 +9,6 @@ var spring = DampedSpring2D.new()
 var _is_dragging := false
 var _drag_offset : Vector2
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	spring.value = follow_sphere.position
-
-
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	var mp := get_viewport().get_mouse_position()
@@ -28,6 +23,5 @@ func _process(delta: float) -> void:
 	else:
 		_is_dragging = false
 		
-	spring.target_value = drag_sphere.position
-	follow_sphere.position = spring.update(delta, spring_params)
+	follow_sphere.position = spring.update(delta, follow_sphere.position, drag_sphere.position, spring_params)
 	

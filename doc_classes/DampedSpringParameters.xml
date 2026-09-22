@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DampedSpringParameters" inherits="Resource" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Tuning (response time and damping) for a damped spring, shared by [DampedSpring], [DampedSpring2D], and [DampedSpring3D].
+	</brief_description>
+	<description>
+		A [Resource] holding how quickly a damped spring responds ([member time]) and whether it overshoots, settles cleanly, or lags behind ([member damping]). It doesn't hold any spring state itself: no current value, target, or velocity. That state lives on [DampedSpring], [DampedSpring2D], or [DampedSpring3D], which read a [DampedSpringParameters] resource every time their [code]update()[/code] method is called.
+		Because it's a plain, stateless [Resource], one [DampedSpringParameters] can be shared by many spring instances that should all move with the same feel -- for example, every draggable UI element in a menu using the same "snappy" tuning.
+		Use [method setup] to change [member time] and [member damping] together, or set them individually with [member time] and [member damping].
+	</description>
+	<tutorials>
+		<link title="DampedSprings-GDExtension">https://github.com/not-magic/DampedSprings-GDExtension#readme</link>
+	</tutorials>
+	<methods>
+		<method name="setup">
+			<return type="void" />
+			<param index="0" name="p_time" type="float" />
+			<param index="1" name="p_damping" type="float" />
+			<description>
+				Sets [member time] and [member damping] together and recomputes the spring's internal coefficients once. Prefer this over setting [member time] and [member damping] separately when changing both, since each of those setters also triggers its own recomputation.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="damping" type="float" setter="set_damping" getter="get_damping" default="0.0">
+			How overdamped or underdamped the spring is, clamped to the range [code][-0.9, 0.9][/code]. [code]0.0[/code] is critically damped: the fastest response that doesn't overshoot the target. Positive values are increasingly overdamped, responding more slowly without any overshoot. Negative values are increasingly underdamped: the spring oscillates and overshoots its target, with the magnitude of [member damping] approximating the overshoot as a fraction of the initial displacement (for example, [code]-0.5[/code] overshoots the target by about 50% at its peak).
+		</member>
+		<member name="time" type="float" setter="set_time" getter="get_time" default="1.0">
+			How long the spring takes to respond, in seconds. Its precise meaning depends on [member damping]: for a critically damped or overdamped spring ([member damping] [code]&gt;= 0.0[/code]), it's an approximate duration for the spring to settle near its target; for an underdamped spring ([member damping] [code]&lt; 0.0[/code]), it's the time until the spring reaches its first peak overshoot. Clamped to a small positive minimum.
+		</member>
+	</members>
+</class>

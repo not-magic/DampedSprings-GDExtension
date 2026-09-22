@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DampedSpring2D" inherits="Object" api_type="extension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		A damped spring that smooths a [Vector2] value toward a target.
+	</brief_description>
+	<description>
+		Holds only the [member velocity] state needed to continue a damped-spring simulation from one call to [method update] to the next. [DampedSpring2D] doesn't store the spring's current value or target itself -- both are passed into [method update] each time, along with a [DampedSpringParameters] resource describing how the spring should respond.
+		This lets a single [DampedSpring2D] instance be reused for different values and targets, and lets one [DampedSpringParameters] resource be shared by many springs at once. A common use is smoothing a [Node2D]'s [member Node2D.position] toward some target position, as in a camera or drag-and-follow effect.
+		See also [DampedSpring] and [DampedSpring3D] for the [float]/[Vector3] equivalents.
+		[codeblock]
+		var spring := DampedSpring2D.new()
+		@export var spring_params: DampedSpringParameters
+
+		func _process(delta: float) -> void:
+		    follower.position = spring.update(delta, follower.position, target.position, spring_params)
+		[/codeblock]
+	</description>
+	<tutorials>
+		<link title="DampedSprings-GDExtension">https://github.com/not-magic/DampedSprings-GDExtension#readme</link>
+	</tutorials>
+	<methods>
+		<method name="update">
+			<return type="Vector2" />
+			<param index="0" name="delta" type="float" />
+			<param index="1" name="value" type="Vector2" />
+			<param index="2" name="target_value" type="Vector2" />
+			<param index="3" name="parameters" type="DampedSpringParameters" />
+			<description>
+				Advances the spring's internal [member velocity] by [param delta] seconds and returns the new value, moving [param value] toward [param target_value] according to [param parameters]'s [member DampedSpringParameters.time] and [member DampedSpringParameters.damping]. Call this once per frame (or physics tick), passing in the value returned by the previous call as [param value].
+				If [param parameters] is [code]null[/code], [member velocity] is left unchanged and [param value] is returned as-is.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="velocity" type="Vector2" setter="set_velocity" getter="get_velocity" default="Vector2(0, 0)">
+			The spring's current rate of change, advanced in place by [method update]. Usually left for [method update] to manage; can be read or set directly to inspect the spring's momentum, reset it, or give it an initial velocity.
+		</member>
+	</members>
+</class>

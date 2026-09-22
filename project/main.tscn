@@ -15,7 +15,7 @@ spring_params = SubResource("DampedSpringParameters_eb6md")
 
 [node name="DragSphere" type="MeshInstance2D" parent="." unique_id=1555440949]
 position = Vector2(532, 229.00002)
-scale = Vector2(30, 30)
+scale = Vector2(32, 32)
 mesh = SubResource("SphereMesh_m0nv1")
 
 [node name="FollowSphere" type="MeshInstance2D" parent="." unique_id=185257629]

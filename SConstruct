@@ -11,8 +11,16 @@ env = SConscript("godot-cpp/SConstruct")
 # Configures the 'src' directory as a source for header files.
 env.Append(CPPPATH=["src/"])
 
+
 # Collects all .cpp files in the 'src' folder as compile targets.
 sources = Glob("src/*.cpp")
+
+if env["target"] in ["editor", "template_debug"]:
+    try:
+        doc_data = env.GodotCPPDocData("src/gen/doc_data.gen.cpp", source=Glob("doc_classes/*.xml"))
+        sources.append(doc_data)
+    except AttributeError:
+        print("Not including class reference as we're targeting a pre-4.3 baseline.")
 
 # The filename for the dynamic library for this GDExtension.
 # $SHLIBPREFIX is a platform specific prefix for the dynamic library ('lib' on Unix, '' on Windows).
