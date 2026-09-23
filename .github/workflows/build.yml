@@ -32,15 +32,6 @@ jobs:
       - name: Install SCons
         run: pip install scons
 
-      # ilammy/msvc-dev-cmd is unmaintained and stuck on the Node.js 20
-      # runtime GitHub removed; vs-shell does the same job as a plain
-      # PowerShell composite action, so it has no Node runtime to deprecate.
-      - name: Set up MSVC
-        if: matrix.platform == 'windows'
-        uses: egor-tensin/vs-shell@v2
-        with:
-          arch: x64
-
       # Pinned godot-cpp commit, so bumping the submodule invalidates the
       # cache key too.
       - name: Get submodule revisions
