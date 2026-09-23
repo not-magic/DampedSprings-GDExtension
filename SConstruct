@@ -5,6 +5,9 @@ import sys
 # You can find documentation for SCons and SConstruct files at:
 # https://scons.org/documentation.html
 
+# Godot API version we build against
+# ARGUMENTS.setdefault("api_version", "4.5")
+
 # This lets SCons know that we're using godot-cpp, from the godot-cpp folder.
 env = SConscript("godot-cpp/SConstruct")
 
@@ -20,7 +23,7 @@ if env["target"] in ["editor", "template_debug"]:
         doc_data = env.GodotCPPDocData("src/gen/doc_data.gen.cpp", source=Glob("doc_classes/*.xml"))
         sources.append(doc_data)
     except AttributeError:
-        print("Not including class reference as we're targeting a pre-4.3 baseline.")
+        print("Not including class reference as we're targeting a pre-4.5 baseline.")
 
 # The filename for the dynamic library for this GDExtension.
 # $SHLIBPREFIX is a platform specific prefix for the dynamic library ('lib' on Unix, '' on Windows).
@@ -28,11 +31,11 @@ if env["target"] in ["editor", "template_debug"]:
 # env["suffix"] includes the build's feature tags (e.g. '.windows.template_debug.x86_64')
 # (see https://docs.godotengine.org/en/stable/tutorials/export/feature_tags.html).
 # The final path should match a path in the '.gdextension' file.
-lib_filename = "{}gdexample{}{}".format(env.subst('$SHLIBPREFIX'), env["suffix"], env.subst('$SHLIBSUFFIX'))
+lib_filename = "{}DampedSprings{}{}".format(env.subst('$SHLIBPREFIX'), env["suffix"], env.subst('$SHLIBSUFFIX'))
 
 # Creates a SCons target for the path with our sources.
 library = env.SharedLibrary(
-    "project/bin/{}".format(lib_filename),
+    "project/addons/DampedSprings/bin/{}".format(lib_filename),
     source=sources,
 )
 

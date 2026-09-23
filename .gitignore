@@ -5,9 +5,9 @@
 *.o
 
 # Built extension binaries
-project/bin/*.so
-project/bin/*.dylib
-project/bin/*.dll
+project/addons/DampedSprings/bin/*.so
+project/addons/DampedSprings/bin/*.dylib
+project/addons/DampedSprings/bin/*.dll
 
 # Test binaries
 tests/bin/

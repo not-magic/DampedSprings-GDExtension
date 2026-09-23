@@ -2,8 +2,7 @@
 
 [ext_resource type="Script" uid="uid://b1nx5ud7tosrm" path="res://main.gd" id="1_ig7tw"]
 
-[sub_resource type="DampedSpringParameters" id="DampedSpringParameters_eb6md"]
-time = 0.819
+[sub_resource type="DampedSpringParameters" id="DampedSpringParameters_3uovh"]
 
 [sub_resource type="SphereMesh" id="SphereMesh_m0nv1"]
 
@@ -11,7 +10,7 @@ time = 0.819
 
 [node name="Main" type="Node2D" unique_id=1336034270]
 script = ExtResource("1_ig7tw")
-spring_params = SubResource("DampedSpringParameters_eb6md")
+spring_params = SubResource("DampedSpringParameters_3uovh")
 
 [node name="DragSphere" type="MeshInstance2D" parent="." unique_id=1555440949]
 position = Vector2(532, 229.00002)
