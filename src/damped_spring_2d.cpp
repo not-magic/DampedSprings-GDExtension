@@ -1,5 +1,4 @@
 #include "damped_spring_2d.h"
-#include "damped_spring_math.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/error_macros.hpp>
 
@@ -30,13 +29,16 @@ Vector2 DampedSpring2D::get_velocity() const {
 Vector2 DampedSpring2D::update(const double p_delta, const Vector2 p_value, const Vector2 p_target_value, const Ref<DampedSpringParameters> &p_parameters) {
 	ERR_FAIL_COND_V(p_parameters.is_null(), p_value);
 
-	Vector2 new_value = damped_spring_step(p_value, p_target_value, velocity, p_parameters->get_spring_constant(), p_parameters->get_damping_constant(), p_delta);
-
+	// F = -k*(value - target) - c*velocity, mass = 1.
+	const Vector2 acceleration = -p_parameters->get_spring_constant() * (p_value - p_target_value) - p_parameters->get_damping_constant() * velocity;
+	velocity += acceleration * p_delta;
 	velocity = velocity.limit_length(p_parameters->get_max_velocity());
+
+	Vector2 new_value = p_value + velocity * p_delta;
 
 	const Vector2 offset = new_value - p_target_value;
 	const double max_distance = p_parameters->get_max_distance();
-	if (offset.length() > max_distance) {
+	if (offset.length_squared() > max_distance * max_distance) {
 		new_value = p_target_value + offset.limit_length(max_distance);
 	}
 

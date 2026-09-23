@@ -1,9 +1,9 @@
-// Standalone convergence test for damped_spring_step() (src/damped_spring_math.h).
-//
-// It exercises the exact per-step integration formula that
-// DampedSpring/DampedSpring2D/DampedSpring3D::update() calls, but does so
-// natively -- no Godot engine, no ClassDB, no GDExtension loading -- since
-// the math header has no engine dependency. Build and run with `scons tests`.
+// Standalone convergence test for the semi-implicit Euler integration step
+// (F = -k*(value - target) - c*velocity, mass = 1) that
+// DampedSpring/DampedSpring2D/DampedSpring3D::update() perform inline. Runs
+// natively -- no Godot engine, no ClassDB, no GDExtension loading -- against
+// a plain double, mirroring the scalar DampedSpring case. Build and run with
+// `scons tests`.
 //
 // The check: a spring tuned to settle in ~1 second should reach ~the same
 // place after 1 simulated second regardless of how finely that second is
@@ -11,12 +11,8 @@
 // numerical error against the closed-form solution should shrink as the
 // step size shrinks.
 
-#include "../src/damped_spring_math.h"
-
 #include <cmath>
 #include <cstdio>
-
-using namespace godot;
 
 namespace {
 
@@ -40,7 +36,9 @@ double simulate(double p_spring_constant, double p_damping_constant, double p_de
 	const double target_value = 0.0;
 	const int steps = static_cast<int>(p_total_time / p_delta + 0.5);
 	for (int i = 0; i < steps; i++) {
-		value = damped_spring_step(value, target_value, velocity, p_spring_constant, p_damping_constant, p_delta);
+		const double acceleration = -p_spring_constant * (value - target_value) - p_damping_constant * velocity;
+		velocity += acceleration * p_delta;
+		value = value + velocity * p_delta;
 	}
 	return value;
 }
