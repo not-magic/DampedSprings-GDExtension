@@ -1,5 +1,6 @@
 #include "damped_spring_parameters.h"
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/core/math_defs.hpp>
 
 using namespace godot;
 
@@ -61,7 +62,7 @@ void DampedSpringParameters::setup(const double p_time, const double p_damping) 
 
 		zeta = -logOvershoot /
 			std::sqrt(
-				M_PI * M_PI +
+				Math_PI * Math_PI +
 				logOvershoot * logOvershoot);
 	}
 	else if (effective_damping == 0.0f)
@@ -88,7 +89,7 @@ void DampedSpringParameters::setup(const double p_time, const double p_damping) 
 
 	if (zeta < 1.0f)
 	{
-		double omegaD = M_PI / time;
+		double omegaD = Math_PI / time;
 		omegaN = omegaD / std::sqrt(1.0f - zeta * zeta);
 	}
 	else
