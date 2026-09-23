@@ -6,6 +6,10 @@ using namespace godot;
 
 namespace {
 constexpr double MIN_TIME = 0.001;
+// Large enough that no realistic value/velocity ever hits it, so the clamps
+// are a no-op unless the caller opts in by lowering them.
+constexpr double DEFAULT_MAX_VELOCITY = 1e9;
+constexpr double DEFAULT_MAX_DISTANCE = 1e9;
 }
 
 void DampedSpringParameters::_bind_methods() {
@@ -13,14 +17,22 @@ void DampedSpringParameters::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_time", "p_time"), &DampedSpringParameters::set_time);
 	ClassDB::bind_method(D_METHOD("get_damping"), &DampedSpringParameters::get_damping);
 	ClassDB::bind_method(D_METHOD("set_damping", "p_damping"), &DampedSpringParameters::set_damping);
+	ClassDB::bind_method(D_METHOD("get_max_velocity"), &DampedSpringParameters::get_max_velocity);
+	ClassDB::bind_method(D_METHOD("set_max_velocity", "p_max_velocity"), &DampedSpringParameters::set_max_velocity);
+	ClassDB::bind_method(D_METHOD("get_max_distance"), &DampedSpringParameters::get_max_distance);
+	ClassDB::bind_method(D_METHOD("set_max_distance", "p_max_distance"), &DampedSpringParameters::set_max_distance);
 	ClassDB::bind_method(D_METHOD("setup", "p_time", "p_damping"), &DampedSpringParameters::setup);
 
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "time", PROPERTY_HINT_RANGE, "0.001,10,0.001,or_greater"), "set_time", "get_time");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "damping", PROPERTY_HINT_RANGE, "-0.9,0.9,0.01,or_less,or_greater"), "set_damping", "get_damping");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_velocity", PROPERTY_HINT_RANGE, "0,1000,1,or_greater"), "set_max_velocity", "get_max_velocity");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_distance", PROPERTY_HINT_RANGE, "0,1000,1,or_greater"), "set_max_distance", "get_max_distance");
 }
 
 DampedSpringParameters::DampedSpringParameters() {
 	setup(1.0, 0.0);
+	max_velocity = DEFAULT_MAX_VELOCITY;
+	max_distance = DEFAULT_MAX_DISTANCE;
 }
 
 DampedSpringParameters::~DampedSpringParameters() {
@@ -40,6 +52,22 @@ void DampedSpringParameters::set_damping(const double p_damping) {
 
 double DampedSpringParameters::get_damping() const {
 	return damping;
+}
+
+void DampedSpringParameters::set_max_velocity(const double p_max_velocity) {
+	max_velocity = std::max(0.0, p_max_velocity);
+}
+
+double DampedSpringParameters::get_max_velocity() const {
+	return max_velocity;
+}
+
+void DampedSpringParameters::set_max_distance(const double p_max_distance) {
+	max_distance = std::max(0.0, p_max_distance);
+}
+
+double DampedSpringParameters::get_max_distance() const {
+	return max_distance;
 }
 
 void DampedSpringParameters::setup(const double p_time, const double p_damping) {

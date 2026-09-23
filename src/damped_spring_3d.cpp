@@ -30,5 +30,15 @@ Vector3 DampedSpring3D::get_velocity() const {
 Vector3 DampedSpring3D::update(const double p_delta, const Vector3 p_value, const Vector3 p_target_value, const Ref<DampedSpringParameters> &p_parameters) {
 	ERR_FAIL_COND_V(p_parameters.is_null(), p_value);
 
-	return damped_spring_step(p_value, p_target_value, velocity, p_parameters->get_spring_constant(), p_parameters->get_damping_constant(), p_delta);
+	Vector3 new_value = damped_spring_step(p_value, p_target_value, velocity, p_parameters->get_spring_constant(), p_parameters->get_damping_constant(), p_delta);
+
+	velocity = velocity.limit_length(p_parameters->get_max_velocity());
+
+	const Vector3 offset = new_value - p_target_value;
+	const double max_distance = p_parameters->get_max_distance();
+	if (offset.length() > max_distance) {
+		new_value = p_target_value + offset.limit_length(max_distance);
+	}
+
+	return new_value;
 }
