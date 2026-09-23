@@ -32,7 +32,10 @@ Vector2 DampedSpring2D::update(const double p_delta, const Vector2 p_value, cons
 	// F = -k*(value - target) - c*velocity, mass = 1.
 	const Vector2 acceleration = -p_parameters->get_spring_constant() * (p_value - p_target_value) - p_parameters->get_damping_constant() * velocity;
 	velocity += acceleration * p_delta;
-	velocity = velocity.limit_length(p_parameters->get_max_velocity());
+	const double max_velocity = p_parameters->get_max_velocity();
+	if (velocity.length_squared() > max_velocity * max_velocity) {
+		velocity = velocity.limit_length(max_velocity);
+	}
 
 	Vector2 new_value = p_value + velocity * p_delta;
 
