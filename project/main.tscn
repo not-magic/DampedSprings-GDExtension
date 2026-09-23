@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://b1nx5ud7tosrm" path="res://main.gd" id="1_ig7tw"]
 
 [sub_resource type="DampedSpringParameters" id="DampedSpringParameters_3uovh"]
+max_velocity = 100.0
+max_distance = 100.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_m0nv1"]
 
