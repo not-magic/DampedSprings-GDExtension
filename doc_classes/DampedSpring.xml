@@ -12,7 +12,7 @@
 		var spring_params := DampedSpringParameters.new()
 		var value := 0.0
 
-		func _process(delta: float) -> void:
+		func _process(delta: float) -&gt; void:
 		    value = spring.update(delta, value, target_value, spring_params)
 		[/codeblock]
 	</description>

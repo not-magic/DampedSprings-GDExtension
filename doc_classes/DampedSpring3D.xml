@@ -11,7 +11,7 @@
 		var spring := DampedSpring3D.new()
 		@export var spring_params: DampedSpringParameters
 
-		func _process(delta: float) -> void:
+		func _process(delta: float) -&gt; void:
 		    follower.position = spring.update(delta, follower.position, target.position, spring_params)
 		[/codeblock]
 	</description>
