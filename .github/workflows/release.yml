@@ -1,21 +1,34 @@
 name: Release
 
+# Builds template_debug + template_release for linux/windows/macos, then
+# packages project/addons/DampedSprings/ (source-free, binaries for every
+# platform included) into a zip attached to a GitHub Release. The zip's
+# internal layout is addons/DampedSprings/..., so it extracts directly into
+# a project's root (res://). That zip is what's meant to be distributed --
+# either linked directly, or used as the "Custom" download URL in a Godot
+# Asset Library submission, since the Asset Library's GitHub-commit-based
+# download can't include build output that (deliberately) isn't committed
+# to the repo.
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and release (e.g. v1.0.0)"
+        required: true
 
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Build (${{ matrix.platform }}, ${{ matrix.target }})
+    name: ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        target: [template_debug, template_release]
-        platform: [linux, windows, macos]
         include:
           - platform: linux
             os: ubuntu-latest
@@ -23,53 +36,88 @@ jobs:
             os: windows-latest
           - platform: macos
             os: macos-latest
-            flags: arch=universal
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
-      - name: Setup Python (for SCons)
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.x"
 
       - name: Install SCons
-        run: python -m pip install scons
+        run: pip install scons
 
-      - name: Build
-        run: scons platform=${{ matrix.platform }} target=${{ matrix.target }} ${{ matrix.flags }}
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v6
+      # ilammy/msvc-dev-cmd is unmaintained and stuck on the Node.js 20
+      # runtime GitHub removed; vs-shell does the same job as a plain
+      # PowerShell composite action, so it has no Node runtime to deprecate.
+      - name: Set up MSVC
+        if: matrix.platform == 'windows'
+        uses: egor-tensin/vs-shell@v2
         with:
-          name: bin-${{ matrix.platform }}-${{ matrix.target }}
+          arch: x64
+
+      # Pinned godot-cpp commit, so bumping the submodule invalidates the
+      # cache key too.
+      - name: Get submodule revisions
+        id: submodules
+        shell: bash
+        run: echo "hash=$(git submodule status | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache SCons build
+        uses: actions/cache@v6
+        with:
+          path: .scons_cache
+          key: scons-release-${{ matrix.platform }}-${{ hashFiles('src/**', 'SConstruct') }}-${{ steps.submodules.outputs.hash }}
+          restore-keys: |
+            scons-release-${{ matrix.platform }}-
+
+      # Runs the standalone (no godot-cpp) test in tests/ against template_debug
+      # as a sanity check before spending time on the release build.
+      - name: Build and test template_debug
+        env:
+          SCONS_CACHE: ${{ github.workspace }}/.scons_cache
+        run: |
+          scons platform=${{ matrix.platform }} target=template_debug -j4
+          scons tests -j4
+
+      - name: Build template_release
+        env:
+          SCONS_CACHE: ${{ github.workspace }}/.scons_cache
+        run: scons platform=${{ matrix.platform }} target=template_release -j4
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: dampedsprings-bin-${{ matrix.platform }}
           path: project/addons/DampedSprings/bin/
-          if-no-files-found: error
 
   package:
-    name: Package release zip
+    name: Package addon
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Download built binaries
-        uses: actions/download-artifact@v7
+      - uses: actions/checkout@v7
         with:
-          pattern: bin-*
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Download binaries for every platform
+        uses: actions/download-artifact@v8
+        with:
+          pattern: dampedsprings-bin-*
           path: project/addons/DampedSprings/bin
           merge-multiple: true
 
       - name: Zip addon
         run: |
+          cp LICENSE project/addons/DampedSprings/LICENSE
           cd project
-          zip -r "../DampedSprings-${{ github.event.release.tag_name }}.zip" addons
+          zip -r "${{ github.workspace }}/DampedSprings.zip" addons/DampedSprings
 
-      - name: Upload release asset
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" "DampedSprings-${{ github.event.release.tag_name }}.zip"
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: DampedSprings.zip
+          generate_release_notes: true
