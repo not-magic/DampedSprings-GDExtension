@@ -25,6 +25,12 @@
 		<member name="damping" type="float" setter="set_damping" getter="get_damping" default="0.0">
 			How overdamped or underdamped the spring is, clamped to the range [code][-0.9, 0.9][/code]. [code]0.0[/code] is critically damped: the fastest response that doesn't overshoot the target. Positive values are increasingly overdamped, responding more slowly without any overshoot. Negative values are increasingly underdamped: the spring oscillates and overshoots its target, with the magnitude of [member damping] approximating the overshoot as a fraction of the initial displacement (for example, [code]-0.5[/code] overshoots the target by about 50% at its peak).
 		</member>
+		<member name="max_distance" type="float" setter="set_max_distance" getter="get_max_distance" default="1000000000.0">
+			The furthest the spring's value is allowed to end up from its target, clamped in [code]update()[/code] after each step. Defaults to an effectively unlimited [code]1e9[/code], so it has no effect unless lowered -- useful for capping how far a spring can overshoot or lag behind if [code]target_value[/code] jumps a long way or [code]delta[/code] spikes. Clamped to [code]&gt;= 0.0[/code].
+		</member>
+		<member name="max_velocity" type="float" setter="set_max_velocity" getter="get_max_velocity" default="1000000000.0">
+			The fastest the spring's internal velocity is allowed to move, clamped in [code]update()[/code] before it's used to advance the value. Defaults to an effectively unlimited [code]1e9[/code], so it has no effect unless lowered -- useful for capping runaway speed from a stiff spring or a large [code]delta[/code]. Clamped to [code]&gt;= 0.0[/code].
+		</member>
 		<member name="time" type="float" setter="set_time" getter="get_time" default="1.0">
 			How long the spring takes to respond, in seconds. Its precise meaning depends on [member damping]: for a critically damped or overdamped spring ([member damping] [code]&gt;= 0.0[/code]), it's an approximate duration for the spring to settle near its target; for an underdamped spring ([member damping] [code]&lt; 0.0[/code]), it's the time until the spring reaches its first peak overshoot. Clamped to a small positive minimum.
 		</member>
