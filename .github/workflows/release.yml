@@ -79,13 +79,13 @@ jobs:
         env:
           SCONS_CACHE: ${{ github.workspace }}/.scons_cache
         run: |
-          scons platform=${{ matrix.platform }} target=template_debug -j4
-          scons tests -j4
+          scons platform=${{ matrix.platform }} target=template_debug
+          scons tests
 
       - name: Build template_release
         env:
           SCONS_CACHE: ${{ github.workspace }}/.scons_cache
-        run: scons platform=${{ matrix.platform }} target=template_release -j4
+        run: scons platform=${{ matrix.platform }} target=template_release
 
       - name: Upload binaries
         uses: actions/upload-artifact@v7
