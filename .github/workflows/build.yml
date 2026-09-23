@@ -13,6 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         target: [template_debug, template_release]
+        platform: [linux, windows, macos]
         include:
           - platform: linux
             os: ubuntu-latest
