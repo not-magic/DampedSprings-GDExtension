@@ -17,9 +17,7 @@ from pathlib import Path
 # a single identifier with no space or dot inside the brackets. Qualified
 # refs such as `[member velocity]`, `[method update]`, or
 # `[member Node3D.position]` contain a space (or, once split on space, a
-# dot) and so don't match; those are left as plain bracketed text, same as
-# a bare reference to a builtin type (`[Vector3]`, `[float]`, ...) that
-# isn't one of this addon's own classes.
+# dot) and so don't match; those are left untouched, brackets and all.
 CLASS_LINK_RE = re.compile(r"\[([A-Za-z_][A-Za-z0-9_]*)\]")
 
 
@@ -32,13 +30,15 @@ def text(el):
 
 def linkify_class_refs(text, known_classes):
     """Turn `[ClassName]` into a relative Markdown link when ClassName is one
-    of this addon's own documented classes (i.e. has a doc_classes/*.xml)."""
+    of this addon's own documented classes (i.e. has a doc_classes/*.xml).
+    Otherwise (e.g. a builtin type like `[Vector3]`), drop the brackets and
+    bold the name instead, since there's nowhere local to link it to."""
 
     def repl(m):
         name = m.group(1)
         if name in known_classes:
             return f"[{name}](./{name})"
-        return m.group(0)
+        return f"**{name}**"
 
     return CLASS_LINK_RE.sub(repl, text)
 
