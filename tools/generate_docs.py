@@ -16,9 +16,16 @@ from pathlib import Path
 # Matches a bare Godot doc class reference like `[DampedSpringParameters]` --
 # a single identifier with no space or dot inside the brackets. Qualified
 # refs such as `[member velocity]`, `[method update]`, or
-# `[member Node3D.position]` contain a space (or, once split on space, a
-# dot) and so don't match; those are left untouched, brackets and all.
+# `[member Node3D.position]` contain a space and so don't match this one;
+# those are handled by MEMBER_METHOD_REF_RE below.
 CLASS_LINK_RE = re.compile(r"\[([A-Za-z_][A-Za-z0-9_]*)\]")
+
+# Matches `[member name]`/`[method name]` (referring to this class's own
+# member/method) and `[member Class.name]`/`[method Class.name]` (referring
+# to another class's).
+MEMBER_METHOD_REF_RE = re.compile(
+    r"\[(member|method)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?\]"
+)
 
 
 def text(el):
@@ -26,6 +33,12 @@ def text(el):
     if el is None or el.text is None:
         return ""
     return el.text.strip()
+
+
+def anchor_id(kind, name):
+    """The anchor id given to a property/method's `<a name=...>`, and used to
+    link to it from `[member ...]`/`[method ...]` refs elsewhere."""
+    return f"{kind}-{name.lower()}"
 
 
 def linkify_class_refs(text, known_classes):
@@ -43,7 +56,26 @@ def linkify_class_refs(text, known_classes):
     return CLASS_LINK_RE.sub(repl, text)
 
 
-def format_description(raw, known_classes=frozenset()):
+def linkify_member_method_refs(text, known_classes, current_class):
+    """Turn `[member name]`/`[method name]` (this class) and
+    `[member Class.name]`/`[method Class.name]` (another class) into a link
+    to that member/method's anchor, when the target class is documented
+    locally. Otherwise, drop the brackets/keyword and bold the reference,
+    same as an unrecognized `[ClassName]`."""
+
+    def repl(m):
+        kind, first, second = m.group(1), m.group(2), m.group(3)
+        cls, name = (first, second) if second else (current_class, first)
+        if cls in known_classes:
+            anchor = anchor_id(kind, name)
+            target = f"#{anchor}" if cls == current_class else f"./{cls}#{anchor}"
+            return f"[{name}]({target})"
+        return f"**{first}.{second}**" if second else f"**{first}**"
+
+    return MEMBER_METHOD_REF_RE.sub(repl, text)
+
+
+def format_description(raw, known_classes=frozenset(), current_class=None):
     """Convert BBCode-ish Godot doc markup into plain Markdown text."""
     if not raw:
         return ""
@@ -56,7 +88,11 @@ def format_description(raw, known_classes=frozenset()):
     ]
     for old, new in replacements:
         out = out.replace(old, new)
+    # Class refs first: its regex only matches a single bare identifier in
+    # brackets, so it can't accidentally re-match the `[name](#anchor)` links
+    # linkify_member_method_refs produces, but running it after would.
     out = linkify_class_refs(out, known_classes)
+    out = linkify_member_method_refs(out, known_classes, current_class)
     return out.strip()
 
 
@@ -87,12 +123,12 @@ def render_class(root, class_name, known_classes=frozenset()):
         lines.append(f"**Inherits:** `{inherits}`")
         lines.append("")
 
-    brief = format_description(text(root.find("brief_description")), known_classes)
+    brief = format_description(text(root.find("brief_description")), known_classes, class_name)
     if brief:
         lines.append(brief)
         lines.append("")
 
-    description = format_description(text(root.find("description")), known_classes)
+    description = format_description(text(root.find("description")), known_classes, class_name)
     if description:
         lines.append("## Description")
         lines.append("")
@@ -125,8 +161,9 @@ def render_class(root, class_name, known_classes=frozenset()):
                 mtype = format_type(m.get("type", ""))
                 name = m.get("name", "")
                 default = m.get("default", "")
-                desc = format_description(text(m), known_classes).replace("\n", " ")
-                lines.append(f"| {mtype} | {name} | `{default}` | {desc} |")
+                desc = format_description(text(m), known_classes, class_name).replace("\n", " ")
+                name_cell = f'<a name="{anchor_id("member", name)}"></a>{name}'
+                lines.append(f"| {mtype} | {name_cell} | `{default}` | {desc} |")
             lines.append("")
 
     methods = root.find("methods")
@@ -144,11 +181,12 @@ def render_class(root, class_name, known_classes=frozenset()):
                 sig = f"{format_type(ret_type)} **{name}**({render_params(params)})"
                 if qualifiers:
                     sig += f" {qualifiers}"
+                lines.append(f'<a name="{anchor_id("method", name)}"></a>')
                 lines.append(f"### {name}")
                 lines.append("")
                 lines.append(sig)
                 lines.append("")
-                desc = format_description(text(meth.find("description")), known_classes)
+                desc = format_description(text(meth.find("description")), known_classes, class_name)
                 if desc:
                     lines.append(desc)
                     lines.append("")
@@ -164,7 +202,7 @@ def render_class(root, class_name, known_classes=frozenset()):
                 params = sig.findall("param")
                 lines.append(f"### {name}({render_params(params)})")
                 lines.append("")
-                desc = format_description(text(sig.find("description")), known_classes)
+                desc = format_description(text(sig.find("description")), known_classes, class_name)
                 if desc:
                     lines.append(desc)
                     lines.append("")
@@ -180,7 +218,7 @@ def render_class(root, class_name, known_classes=frozenset()):
             for c in const_list:
                 name = c.get("name", "")
                 value = c.get("value", "")
-                desc = format_description(text(c), known_classes).replace("\n", " ")
+                desc = format_description(text(c), known_classes, class_name).replace("\n", " ")
                 lines.append(f"| {name} | `{value}` | {desc} |")
             lines.append("")
 
@@ -196,7 +234,7 @@ def render_class(root, class_name, known_classes=frozenset()):
                 itype = format_type(item.get("type", ""))
                 name = item.get("name", "")
                 default = item.get("default", "")
-                desc = format_description(text(item), known_classes).replace("\n", " ")
+                desc = format_description(text(item), known_classes, class_name).replace("\n", " ")
                 lines.append(f"| {itype} | {name} | `{default}` | {desc} |")
             lines.append("")
 
