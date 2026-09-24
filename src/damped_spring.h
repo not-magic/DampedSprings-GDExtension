@@ -23,6 +23,8 @@ public:
 	double get_velocity() const;
 
 	double update(const double p_delta, const double p_value, const double p_target_value, const Ref<DampedSpringParameters> &p_parameters);
+	double update_blend(const double p_delta, const double p_value, const double p_target_value, const Ref<DampedSpringParameters> &p_parameters_a, const Ref<DampedSpringParameters> &p_parameters_b, const double p_weight);
+	double update_constants(const double p_delta, const double p_value, const double p_target_value, const double p_spring_constant, const double p_damping_constant);
 };
 
 } // namespace godot

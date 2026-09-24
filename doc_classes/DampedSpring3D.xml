@@ -4,9 +4,11 @@
 		A damped spring that smooths a [Vector3] value toward a target.
 	</brief_description>
 	<description>
-		Holds only the [member velocity] state needed to continue a damped-spring simulation from one call to [method update] to the next. [DampedSpring3D] doesn't store the spring's current value or target itself -- both are passed into [method update] each time, along with a [DampedSpringParameters] resource describing how the spring should respond.
-		This lets a single [DampedSpring3D] instance be reused for different values and targets, and lets one [DampedSpringParameters] resource be shared by many springs at once. A common use is smoothing a [Node3D]'s [member Node3D.position] toward some target position, as in a camera or drag-and-follow effect.
+		A spring instance. You should create and update one spring instance for each value you wish to smooth.
+
 		See also [DampedSpring] and [DampedSpring2D] for the [float]/[Vector2] equivalents.
+	</description>
+	<tutorials>
 		[codeblock]
 		var spring := DampedSpring3D.new()
 		@export var spring_params: DampedSpringParameters
@@ -14,9 +16,6 @@
 		func _process(delta: float) -&gt; void:
 		    follower.position = spring.update(delta, follower.position, target.position, spring_params)
 		[/codeblock]
-	</description>
-	<tutorials>
-		<link title="DampedSprings-GDExtension">https://github.com/not-magic/DampedSprings-GDExtension#readme</link>
 	</tutorials>
 	<methods>
 		<method name="update">
@@ -26,8 +25,38 @@
 			<param index="2" name="target_value" type="Vector3" />
 			<param index="3" name="parameters" type="DampedSpringParameters" />
 			<description>
-				Advances the spring's internal [member velocity] by [param delta] seconds and returns the new value, moving [param value] toward [param target_value] according to [param parameters]'s [member DampedSpringParameters.time] and [member DampedSpringParameters.damping]. Call this once per frame (or physics tick), passing in the value returned by the previous call as [param value].
+				Updates the spring inertia state, and returns a new value.
+
+				Call this once per frame (or physics tick), passing in the value returned by the previous call as [param value].
 				If [param parameters] is [code]null[/code], [member velocity] is left unchanged and [param value] is returned as-is.
+
+			</description>
+		</method>
+		<method name="update_blend">
+			<return type="Vector3" />
+			<param index="0" name="delta" type="float" />
+			<param index="1" name="value" type="Vector3" />
+			<param index="2" name="target_value" type="Vector3" />
+			<param index="3" name="parameters_a" type="DampedSpringParameters" />
+			<param index="4" name="parameters_b" type="DampedSpringParameters" />
+			<param index="5" name="weight" type="float" />
+			<description>
+				Like [method update], but blends smoothly between two [DampedSpringParameters] tunings instead of using just one: the spring/damping constants used for this step are linearly interpolated between [param parameters_a] and [param parameters_b] by [param weight] ([code]0.0[/code] = fully [param parameters_a], [code]1.0[/code] = fully [param parameters_b]). Useful for crossfading between two "feels" (e.g. a relaxed and a snappy tuning) over time, rather than jumping between them.
+
+				If either [param parameters_a] or [param parameters_b] is [code]null[/code], [member velocity] is left unchanged and [param value] is returned as-is.
+			</description>
+		</method>
+		<method name="update_constants">
+			<return type="Vector3" />
+			<param index="0" name="delta" type="float" />
+			<param index="1" name="value" type="Vector3" />
+			<param index="2" name="target_value" type="Vector3" />
+			<param index="3" name="spring_constant" type="float" />
+			<param index="4" name="damping_constant" type="float" />
+			<description>
+				Like [method update], but takes the spring's [param spring_constant]/[param damping_constant] coefficients directly instead of a [DampedSpringParameters] resource -- e.g. [member DampedSpringParameters.spring_constant]/[member DampedSpringParameters.damping_constant], or values computed/blended by the caller.
+
+				This method is added for advanced manual spring blending use cases, or if you wish to specify damped spring parameters in a different way.
 			</description>
 		</method>
 	</methods>

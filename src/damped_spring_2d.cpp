@@ -1,4 +1,5 @@
 #include "damped_spring_2d.h"
+#include "damped_spring_math.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/error_macros.hpp>
 
@@ -8,6 +9,8 @@ void DampedSpring2D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_velocity"), &DampedSpring2D::get_velocity);
 	ClassDB::bind_method(D_METHOD("set_velocity", "velocity"), &DampedSpring2D::set_velocity);
 	ClassDB::bind_method(D_METHOD("update", "delta", "value", "target_value", "parameters"), &DampedSpring2D::update);
+	ClassDB::bind_method(D_METHOD("update_blend", "delta", "value", "target_value", "parameters_a", "parameters_b", "weight"), &DampedSpring2D::update_blend);
+	ClassDB::bind_method(D_METHOD("update_constants", "delta", "value", "target_value", "spring_constant", "damping_constant"), &DampedSpring2D::update_constants);
 
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "velocity"), "set_velocity", "get_velocity");
 }
@@ -28,22 +31,15 @@ Vector2 DampedSpring2D::get_velocity() const {
 
 Vector2 DampedSpring2D::update(const double p_delta, const Vector2 p_value, const Vector2 p_target_value, const Ref<DampedSpringParameters> &p_parameters) {
 	ERR_FAIL_COND_V(p_parameters.is_null(), p_value);
+	return damped_spring_update(p_delta, p_value, p_target_value, p_parameters->get_spring_constant(), p_parameters->get_damping_constant(), velocity);
+}
 
-	// F = -k*(value - target) - c*velocity, mass = 1.
-	const Vector2 acceleration = -p_parameters->get_spring_constant() * (p_value - p_target_value) - p_parameters->get_damping_constant() * velocity;
-	velocity += acceleration * p_delta;
-	const double max_velocity = p_parameters->get_max_velocity();
-	if (velocity.length_squared() > max_velocity * max_velocity) {
-		velocity = velocity.limit_length(max_velocity);
-	}
+Vector2 DampedSpring2D::update_blend(const double p_delta, const Vector2 p_value, const Vector2 p_target_value, const Ref<DampedSpringParameters> &p_parameters_a, const Ref<DampedSpringParameters> &p_parameters_b, const double p_weight) {
+	ERR_FAIL_COND_V(p_parameters_a.is_null(), p_value);
+	ERR_FAIL_COND_V(p_parameters_b.is_null(), p_value);
+	return damped_spring_update_blend(p_delta, p_value, p_target_value, p_parameters_a->get_spring_constant(), p_parameters_a->get_damping_constant(), p_parameters_b->get_spring_constant(), p_parameters_b->get_damping_constant(), p_weight, velocity);
+}
 
-	Vector2 new_value = p_value + velocity * p_delta;
-
-	const Vector2 offset = new_value - p_target_value;
-	const double max_distance = p_parameters->get_max_distance();
-	if (offset.length_squared() > max_distance * max_distance) {
-		new_value = p_target_value + offset.limit_length(max_distance);
-	}
-
-	return new_value;
+Vector2 DampedSpring2D::update_constants(const double p_delta, const Vector2 p_value, const Vector2 p_target_value, const double p_spring_constant, const double p_damping_constant) {
+	return damped_spring_update(p_delta, p_value, p_target_value, p_spring_constant, p_damping_constant, velocity);
 }

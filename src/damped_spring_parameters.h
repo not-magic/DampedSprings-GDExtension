@@ -10,8 +10,6 @@ class DampedSpringParameters : public Resource {
 private:
 	double time;
 	double damping;
-	double max_velocity;
-	double max_distance;
 
 	// Derived spring/damping coefficients (mass = 1) for a damped harmonic
 	// oscillator, with `damping` == 0.0 being critically damped, > 0.0
@@ -35,12 +33,6 @@ public:
 
 	void set_damping(const double p_damping);
 	double get_damping() const;
-
-	void set_max_velocity(const double p_max_velocity);
-	double get_max_velocity() const;
-
-	void set_max_distance(const double p_max_distance);
-	double get_max_distance() const;
 
 	void setup(const double p_time, const double p_damping);
 

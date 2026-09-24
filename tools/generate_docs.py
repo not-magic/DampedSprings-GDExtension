@@ -84,7 +84,7 @@ def format_description(raw, known_classes=frozenset(), current_class=None):
         ("[b]", "**"), ("[/b]", "**"),
         ("[i]", "_"), ("[/i]", "_"),
         ("[code]", "`"), ("[/code]", "`"),
-        ("[codeblock]", "\n```\n"), ("[/codeblock]", "\n```\n"),
+        ("[codeblock]", "\n```gdscript\n"), ("[/codeblock]", "\n```\n"),
     ]
     for old, new in replacements:
         out = out.replace(old, new)
@@ -137,17 +137,27 @@ def render_class(root, class_name, known_classes=frozenset()):
 
     tutorials = root.find("tutorials")
     if tutorials is not None:
+        # <tutorials>'s own text (before any <link> children) isn't part of
+        # the Godot doc schema, but this addon's XML sometimes puts a
+        # [codeblock] example there -- run it through format_description too
+        # so [codeblock] (and any other BBCode-ish markup) is handled no
+        # matter which element it ends up in.
+        intro = format_description(text(tutorials), known_classes, class_name)
         links = tutorials.findall("link")
-        if links:
+        if intro or links:
             lines.append("## Tutorials")
             lines.append("")
+            if intro:
+                lines.append(intro)
+                lines.append("")
             for link in links:
                 title = link.get("title")
                 url = text(link)
                 label = title if title else url
                 if url:
                     lines.append(f"- [{label}]({url})")
-            lines.append("")
+            if links:
+                lines.append("")
 
     members = root.find("members")
     if members is not None:

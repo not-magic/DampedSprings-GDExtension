@@ -24,6 +24,8 @@ public:
 	Vector2 get_velocity() const;
 
 	Vector2 update(const double p_delta, const Vector2 p_value, const Vector2 p_target_value, const Ref<DampedSpringParameters> &p_parameters);
+	Vector2 update_blend(const double p_delta, const Vector2 p_value, const Vector2 p_target_value, const Ref<DampedSpringParameters> &p_parameters_a, const Ref<DampedSpringParameters> &p_parameters_b, const double p_weight);
+	Vector2 update_constants(const double p_delta, const Vector2 p_value, const Vector2 p_target_value, const double p_spring_constant, const double p_damping_constant);
 };
 
 } // namespace godot

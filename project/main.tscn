@@ -3,16 +3,22 @@
 [ext_resource type="Script" uid="uid://b1nx5ud7tosrm" path="res://main.gd" id="1_ig7tw"]
 
 [sub_resource type="DampedSpringParameters" id="DampedSpringParameters_3uovh"]
-max_velocity = 100.0
-max_distance = 100.0
+damping = -0.36
+
+[sub_resource type="DampedSpringParameters" id="DampedSpringParameters_ig7tw"]
+time = 0.302
+damping = 0.5499999999999999
 
 [sub_resource type="SphereMesh" id="SphereMesh_m0nv1"]
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_h2yge"]
 
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_4bpgs"]
+
 [node name="Main" type="Node2D" unique_id=1336034270]
 script = ExtResource("1_ig7tw")
 spring_params = SubResource("DampedSpringParameters_3uovh")
+clamp_spring_params = SubResource("DampedSpringParameters_ig7tw")
 
 [node name="DragSphere" type="MeshInstance2D" parent="." unique_id=1555440949]
 position = Vector2(532, 229.00002)
@@ -24,3 +30,9 @@ position = Vector2(603, 284)
 scale = Vector2(30, 30)
 mesh = SubResource("SphereMesh_m0nv1")
 texture = SubResource("NoiseTexture2D_h2yge")
+
+[node name="FollowSphere2" type="MeshInstance2D" parent="." unique_id=1647688846]
+position = Vector2(603, 284)
+scale = Vector2(30, 30)
+mesh = SubResource("SphereMesh_m0nv1")
+texture = SubResource("PlaceholderTexture2D_4bpgs")
