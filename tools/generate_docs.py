@@ -30,6 +30,9 @@ MEMBER_METHOD_REF_RE = re.compile(
 
 CODEBLOCK_RE = re.compile(r"\[codeblock\](.*?)\[/codeblock\]", re.DOTALL)
 
+# Matches a parameter reference like `[param delta]`.
+PARAM_RE = re.compile(r"\[param\s+([A-Za-z_][A-Za-z0-9_]*)\]")
+
 
 def text(el):
     """Return the stripped text content of an element, or '' if empty/None."""
@@ -91,6 +94,11 @@ def fence_codeblocks(raw):
     return CODEBLOCK_RE.sub(repl, raw)
 
 
+def italicize_param_refs(text):
+    """Turn `[param name]` into an italicized `_name_`."""
+    return PARAM_RE.sub(lambda m: f"_{m.group(1)}_", text)
+
+
 def strip_prose_indentation(text):
     """Remove the XML source's per-line indentation from ordinary prose --
     continuation lines are indented to match the surrounding XML tag depth,
@@ -128,6 +136,7 @@ def format_description(raw, known_classes=frozenset(), current_class=None):
     # linkify_member_method_refs produces, but running it after would.
     out = linkify_class_refs(out, known_classes)
     out = linkify_member_method_refs(out, known_classes, current_class)
+    out = italicize_param_refs(out)
     out = strip_prose_indentation(out)
     return out.strip()
 
