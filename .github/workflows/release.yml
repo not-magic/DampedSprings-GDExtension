@@ -82,7 +82,10 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: dampedsprings-bin-${{ matrix.platform }}
-          path: project/addons/DampedSprings/bin/
+          path: |
+            project/addons/DampedSprings/bin/*.so
+            project/addons/DampedSprings/bin/*.dll
+            project/addons/DampedSprings/bin/*.dylib
 
   package:
     name: Package addon
