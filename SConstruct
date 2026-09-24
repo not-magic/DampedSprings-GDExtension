@@ -8,6 +8,8 @@ import sys
 # Godot API version we build against
 # ARGUMENTS.setdefault("api_version", "4.5")
 
+ADDON_NAME = 'DampedSprings'
+
 # This lets SCons know that we're using godot-cpp, from the godot-cpp folder.
 env = SConscript("godot-cpp/SConstruct")
 
@@ -31,11 +33,11 @@ if env["target"] in ["editor", "template_debug"]:
 # env["suffix"] includes the build's feature tags (e.g. '.windows.template_debug.x86_64')
 # (see https://docs.godotengine.org/en/stable/tutorials/export/feature_tags.html).
 # The final path should match a path in the '.gdextension' file.
-lib_filename = "{}DampedSprings{}{}".format(env.subst('$SHLIBPREFIX'), env["suffix"], env.subst('$SHLIBSUFFIX'))
+lib_filename = "{}{}{}{}".format(env.subst('$SHLIBPREFIX'), ADDON_NAME, env["suffix"], env.subst('$SHLIBSUFFIX'))
 
 # Creates a SCons target for the path with our sources.
 library = env.SharedLibrary(
-    "project/addons/DampedSprings/bin/{}".format(lib_filename),
+    "project/addons/{}/bin/{}".format(ADDON_NAME, lib_filename),
     source=sources,
 )
 
@@ -58,3 +60,37 @@ else:
 test_program = test_env.Program("tests/bin/test_damped_spring", Glob("tests/*.cpp"))
 run_tests = test_env.Alias("tests", test_program, test_program[0].abspath)
 AlwaysBuild(run_tests)
+
+# --- Docs update (doc_classes/) ---
+# Regenerates doc_classes/*.xml from the classes' _bind_methods() by loading
+# the built extension into Godot's --doctool. Requires a template_debug build
+# (with doc data compiled in, see the GodotCPPDocData block above) and a
+# flatpak install of the Godot editor (org.godotengine.Godot). Run with
+# `scons docs`. Runs from project/ since --doctool needs a Godot project
+# (project.godot) to load the extension into.
+update_docs = Command(
+    "update_docs",
+    None,
+    "flatpak run org.godotengine.Godot --doctool ../ --gdextension-docs",
+    chdir="project",
+)
+AlwaysBuild(update_docs)
+
+# --- Wiki docs (docs/) ---
+# Regenerates docs/*.md (GitHub wiki pages) from doc_classes/*.xml via
+# tools/generate_docs.py. Runs as part of the default build (against
+# whatever doc_classes/*.xml is currently on disk) and again after `scons
+# docs` regenerates that XML, so the wiki pages never drift from it. Split
+# into two Command nodes so a plain build never pulls in the flatpak
+# --doctool step above.
+wiki_action = "{} tools/generate_docs.py --src doc_classes --out docs".format(sys.executable)
+
+update_wiki = Command("update_wiki", None, wiki_action)
+AlwaysBuild(update_wiki)
+Default(update_wiki)
+
+update_wiki_after_docs = Command("update_wiki_after_docs", None, wiki_action)
+AlwaysBuild(update_wiki_after_docs)
+Requires(update_wiki_after_docs, update_docs)
+
+docs_alias = Alias("docs", [update_docs, update_wiki_after_docs])
