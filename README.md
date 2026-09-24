@@ -15,4 +15,4 @@ func _process(delta: float) -> void:
 
 ## API
 
-The wiki page contains the (API documentation)[./wiki/]. It is also available as part of the Godot editor documentation browser.
+The wiki page contains the [API documentation](./wiki/). It is also available as part of the Godot editor documentation browser.
