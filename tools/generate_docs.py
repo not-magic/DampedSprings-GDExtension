@@ -158,6 +158,22 @@ def render_params(params):
     return ", ".join(parts)
 
 
+def render_params_plain(params):
+    """Like render_params, but with no per-piece Markdown formatting -- for
+    building a method's plain-text signature before it's wrapped in a single
+    code span."""
+    parts = []
+    for p in params:
+        name = p.get("name", "")
+        ptype = p.get("type", "")
+        default = p.get("default")
+        piece = f"{ptype} {name}" if ptype else name
+        if default is not None:
+            piece += f" = {default}"
+        parts.append(piece)
+    return ", ".join(parts)
+
+
 def render_class(root, class_name, known_classes=frozenset()):
     lines = []
     inherits = root.get("inherits")
@@ -233,13 +249,11 @@ def render_class(root, class_name, known_classes=frozenset()):
                 ret_type = ret_el.get("type") if ret_el is not None else "void"
                 params = meth.findall("param")
                 qualifiers = meth.get("qualifiers", "")
-                sig = f"{format_type(ret_type)} **{name}**({render_params(params)})"
+                sig = f"{ret_type} {name}({render_params_plain(params)})"
                 if qualifiers:
                     sig += f" {qualifiers}"
                 lines.append(f'<a name="{anchor_id("method", name)}"></a>')
-                lines.append(f"### {name}")
-                lines.append("")
-                lines.append(sig)
+                lines.append(f"### `{sig}`")
                 lines.append("")
                 desc = format_description(text(meth.find("description")), known_classes, class_name)
                 if desc:
