@@ -9,8 +9,18 @@ Usage:
 """
 
 import argparse
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+# Matches a bare Godot doc class reference like `[DampedSpringParameters]` --
+# a single identifier with no space or dot inside the brackets. Qualified
+# refs such as `[member velocity]`, `[method update]`, or
+# `[member Node3D.position]` contain a space (or, once split on space, a
+# dot) and so don't match; those are left as plain bracketed text, same as
+# a bare reference to a builtin type (`[Vector3]`, `[float]`, ...) that
+# isn't one of this addon's own classes.
+CLASS_LINK_RE = re.compile(r"\[([A-Za-z_][A-Za-z0-9_]*)\]")
 
 
 def text(el):
@@ -20,7 +30,20 @@ def text(el):
     return el.text.strip()
 
 
-def format_description(raw):
+def linkify_class_refs(text, known_classes):
+    """Turn `[ClassName]` into a relative Markdown link when ClassName is one
+    of this addon's own documented classes (i.e. has a doc_classes/*.xml)."""
+
+    def repl(m):
+        name = m.group(1)
+        if name in known_classes:
+            return f"[{name}](./{name})"
+        return m.group(0)
+
+    return CLASS_LINK_RE.sub(repl, text)
+
+
+def format_description(raw, known_classes=frozenset()):
     """Convert BBCode-ish Godot doc markup into plain Markdown text."""
     if not raw:
         return ""
@@ -33,6 +56,7 @@ def format_description(raw):
     ]
     for old, new in replacements:
         out = out.replace(old, new)
+    out = linkify_class_refs(out, known_classes)
     return out.strip()
 
 
@@ -53,7 +77,7 @@ def render_params(params):
     return ", ".join(parts)
 
 
-def render_class(root, class_name):
+def render_class(root, class_name, known_classes=frozenset()):
     lines = []
     inherits = root.get("inherits")
 
@@ -63,12 +87,12 @@ def render_class(root, class_name):
         lines.append(f"**Inherits:** `{inherits}`")
         lines.append("")
 
-    brief = format_description(text(root.find("brief_description")))
+    brief = format_description(text(root.find("brief_description")), known_classes)
     if brief:
         lines.append(brief)
         lines.append("")
 
-    description = format_description(text(root.find("description")))
+    description = format_description(text(root.find("description")), known_classes)
     if description:
         lines.append("## Description")
         lines.append("")
@@ -101,7 +125,7 @@ def render_class(root, class_name):
                 mtype = format_type(m.get("type", ""))
                 name = m.get("name", "")
                 default = m.get("default", "")
-                desc = format_description(text(m)).replace("\n", " ")
+                desc = format_description(text(m), known_classes).replace("\n", " ")
                 lines.append(f"| {mtype} | {name} | `{default}` | {desc} |")
             lines.append("")
 
@@ -124,7 +148,7 @@ def render_class(root, class_name):
                 lines.append("")
                 lines.append(sig)
                 lines.append("")
-                desc = format_description(text(meth.find("description")))
+                desc = format_description(text(meth.find("description")), known_classes)
                 if desc:
                     lines.append(desc)
                     lines.append("")
@@ -140,7 +164,7 @@ def render_class(root, class_name):
                 params = sig.findall("param")
                 lines.append(f"### {name}({render_params(params)})")
                 lines.append("")
-                desc = format_description(text(sig.find("description")))
+                desc = format_description(text(sig.find("description")), known_classes)
                 if desc:
                     lines.append(desc)
                     lines.append("")
@@ -156,7 +180,7 @@ def render_class(root, class_name):
             for c in const_list:
                 name = c.get("name", "")
                 value = c.get("value", "")
-                desc = format_description(text(c)).replace("\n", " ")
+                desc = format_description(text(c), known_classes).replace("\n", " ")
                 lines.append(f"| {name} | `{value}` | {desc} |")
             lines.append("")
 
@@ -172,7 +196,7 @@ def render_class(root, class_name):
                 itype = format_type(item.get("type", ""))
                 name = item.get("name", "")
                 default = item.get("default", "")
-                desc = format_description(text(item)).replace("\n", " ")
+                desc = format_description(text(item), known_classes).replace("\n", " ")
                 lines.append(f"| {itype} | {name} | `{default}` | {desc} |")
             lines.append("")
 
@@ -218,13 +242,22 @@ def main():
         print(f"No XML files found in {src_dir}")
         return
 
+    parsed = []
     class_names = []
     for xml_path in xml_files:
         tree = ET.parse(xml_path)
         root = tree.getroot()
         class_name = root.get("name", xml_path.stem)
+        parsed.append((xml_path, root, class_name))
         class_names.append(class_name)
-        markdown = render_class(root, class_name)
+
+    # Known up front so a class's description can link to another class
+    # documented later in this same run (order of doc_classes/*.xml doesn't
+    # matter).
+    known_classes = set(class_names)
+
+    for xml_path, root, class_name in parsed:
+        markdown = render_class(root, class_name, known_classes)
         out_path = out_dir / f"{xml_path.stem}.md"
         out_path.write_text(markdown, encoding="utf-8")
         print(f"Wrote {out_path}")
