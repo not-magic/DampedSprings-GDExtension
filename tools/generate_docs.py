@@ -10,6 +10,7 @@ Usage:
 
 import argparse
 import re
+import textwrap
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -26,6 +27,8 @@ CLASS_LINK_RE = re.compile(r"\[([A-Za-z_][A-Za-z0-9_]*)\]")
 MEMBER_METHOD_REF_RE = re.compile(
     r"\[(member|method)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\.([A-Za-z_][A-Za-z0-9_]*))?\]"
 )
+
+CODEBLOCK_RE = re.compile(r"\[codeblock\](.*?)\[/codeblock\]", re.DOTALL)
 
 
 def text(el):
@@ -75,16 +78,48 @@ def linkify_member_method_refs(text, known_classes, current_class):
     return MEMBER_METHOD_REF_RE.sub(repl, text)
 
 
+def fence_codeblocks(raw):
+    """Turn `[codeblock]...[/codeblock]` into a fenced ```gdscript block,
+    dedenting its contents by the common leading whitespace (the XML
+    source indents every line to match the surrounding tag depth) while
+    preserving the code's own relative indentation (e.g. a function body)."""
+
+    def repl(m):
+        code = textwrap.dedent(m.group(1)).strip("\n")
+        return f"\n```gdscript\n{code}\n```\n"
+
+    return CODEBLOCK_RE.sub(repl, raw)
+
+
+def strip_prose_indentation(text):
+    """Remove the XML source's per-line indentation from ordinary prose --
+    continuation lines are indented to match the surrounding XML tag depth,
+    which Markdown would otherwise render as an unintended code block --
+    without touching the (already-dedented) contents of a fenced code
+    block."""
+    lines = text.split("\n")
+    out = []
+    in_code_block = False
+    for line in lines:
+        if line.strip().startswith("```"):
+            in_code_block = not in_code_block
+            out.append(line.strip())
+        elif in_code_block:
+            out.append(line)
+        else:
+            out.append(line.lstrip())
+    return "\n".join(out)
+
+
 def format_description(raw, known_classes=frozenset(), current_class=None):
     """Convert BBCode-ish Godot doc markup into plain Markdown text."""
     if not raw:
         return ""
-    out = raw
+    out = fence_codeblocks(raw)
     replacements = [
         ("[b]", "**"), ("[/b]", "**"),
         ("[i]", "_"), ("[/i]", "_"),
         ("[code]", "`"), ("[/code]", "`"),
-        ("[codeblock]", "\n```gdscript\n"), ("[/codeblock]", "\n```\n"),
     ]
     for old, new in replacements:
         out = out.replace(old, new)
@@ -93,6 +128,7 @@ def format_description(raw, known_classes=frozenset(), current_class=None):
     # linkify_member_method_refs produces, but running it after would.
     out = linkify_class_refs(out, known_classes)
     out = linkify_member_method_refs(out, known_classes, current_class)
+    out = strip_prose_indentation(out)
     return out.strip()
 
 
