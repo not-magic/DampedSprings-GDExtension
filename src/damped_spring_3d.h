@@ -1,6 +1,7 @@
 #pragma once
 
 #include "damped_spring_parameters.h"
+
 #include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/variant/vector3.hpp>

@@ -1,4 +1,5 @@
 #include "damped_spring_parameters.h"
+
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/math_defs.hpp>
 
@@ -47,7 +48,6 @@ double DampedSpringParameters::get_damping() const {
 }
 
 void DampedSpringParameters::setup(const double p_time, const double p_damping) {
-
 	time = std::max(MIN_TIME, p_time);
 	damping = std::max(-0.9, std::min(0.9, p_damping));
 
@@ -59,23 +59,18 @@ void DampedSpringParameters::setup(const double p_time, const double p_damping) 
 
 	double zeta;
 
-	if (effective_damping > 0.0f)
-	{
+	if (effective_damping > 0.0f) {
 		// Underdamped: overshoot is the first peak amplitude.
 		double logOvershoot = std::log(effective_damping);
 
 		zeta = -logOvershoot /
-			std::sqrt(
-				Math_PI * Math_PI +
-				logOvershoot * logOvershoot);
-	}
-	else if (effective_damping == 0.0f)
-	{
+				std::sqrt(
+						Math_PI * Math_PI +
+						logOvershoot * logOvershoot);
+	} else if (effective_damping == 0.0f) {
 		// Critically damped.
 		zeta = 1.0f;
-	}
-	else
-	{
+	} else {
 		// Overdamped.
 		// Map negative effective_damping to a damping ratio.
 		//
@@ -91,13 +86,10 @@ void DampedSpringParameters::setup(const double p_time, const double p_damping) 
 	// For overdamped springs, this is only an approximate mapping.
 	double omegaN;
 
-	if (zeta < 1.0f)
-	{
+	if (zeta < 1.0f) {
 		double omegaD = Math_PI / time;
 		omegaN = omegaD / std::sqrt(1.0f - zeta * zeta);
-	}
-	else
-	{
+	} else {
 		// Approximate time constant mapping.
 		omegaN = 4.0f / time;
 	}
@@ -113,4 +105,3 @@ double DampedSpringParameters::get_spring_constant() const {
 double DampedSpringParameters::get_damping_constant() const {
 	return damping_constant;
 }
-

@@ -5,9 +5,10 @@
 *.o
 
 # Built extension binaries
-project/addons/DampedSprings/bin/*.so
-project/addons/DampedSprings/bin/*.dylib
-project/addons/DampedSprings/bin/*.dll
+project/addons/damped_springs/bin/*.so
+project/addons/damped_springs/bin/*.dylib
+project/addons/damped_springs/bin/*.dll
+project/addons/damped_springs/bin/*.wasm
 
 # Test binaries
 tests/bin/

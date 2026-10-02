@@ -8,7 +8,7 @@ import sys
 # Godot API version we build against
 # ARGUMENTS.setdefault("api_version", "4.5")
 
-ADDON_NAME = 'DampedSprings'
+ADDON_NAME = 'damped_springs'
 
 # This lets SCons know that we're using godot-cpp, from the godot-cpp folder.
 env = SConscript("godot-cpp/SConstruct")
@@ -61,6 +61,46 @@ test_program = test_env.Program("tests/bin/test_damped_spring", Glob("tests/*.cp
 run_tests = test_env.Alias("tests", test_program, test_program[0].abspath)
 AlwaysBuild(run_tests)
 
+# --- Formatting and linting (.clang-format, .clang-tidy) ---
+# `scons format` rewrites src/ and tests/ in place with clang-format;
+# `scons tidy` runs clang-tidy over every src/*.cpp (plus headers under src/) with
+# the same include paths/defines the real build uses. Point CLANG_FORMAT /
+# CLANG_TIDY at a specific binary to override the one found on PATH. The
+# .clang-format/.clang-tidy files need a recent LLVM (distro clang 14 can't
+# parse them); `pip install clang-format clang-tidy` provides one.
+import subprocess
+
+godot_env = env
+lint_sources = sorted(str(f) for f in Glob("src/*.cpp") + Glob("src/*.h") + Glob("tests/*.cpp"))
+
+
+def run_format(target, source, env):
+    tool = os.environ.get("CLANG_FORMAT", "clang-format")
+    return subprocess.call([tool, "-i", "--style=file"] + lint_sources)
+
+
+def run_tidy(target, source, env):
+    tool = os.environ.get("CLANG_TIDY", "clang-tidy")
+    status = 0
+    for path in lint_sources:
+        if not path.endswith(".cpp") or path.startswith("tests"):
+            continue
+        compile_args = ["-I" + str(d) for d in godot_env["CPPPATH"]] + ["-std=c++17"]
+        for define in godot_env["CPPDEFINES"]:
+            if isinstance(define, (tuple, list)):
+                compile_args.append("-D{}={}".format(*define))
+            else:
+                compile_args.append("-D" + str(define))
+        status |= subprocess.call([tool, "--quiet", "--header-filter=.*/src/.*", path, "--"] + compile_args)
+    return status
+
+
+format_sources = Command("format", None, run_format)
+AlwaysBuild(format_sources)
+
+tidy_sources = Command("tidy", None, run_tidy)
+AlwaysBuild(tidy_sources)
+
 # --- Docs update (doc_classes/) ---
 # Regenerates doc_classes/*.xml from the classes' _bind_methods() by loading
 # the built extension into Godot's --doctool. Requires a template_debug build
@@ -78,16 +118,16 @@ AlwaysBuild(update_docs)
 
 # --- Wiki docs (docs/) ---
 # Regenerates docs/*.md (GitHub wiki pages) from doc_classes/*.xml via
-# tools/generate_docs.py. Runs as part of the default build (against
-# whatever doc_classes/*.xml is currently on disk) and again after `scons
-# docs` regenerates that XML, so the wiki pages never drift from it. Split
-# into two Command nodes so a plain build never pulls in the flatpak
-# --doctool step above.
+# tools/generate_docs.py. Not part of the default build -- run explicitly
+# with `scons update_wiki` (against whatever doc_classes/*.xml is currently
+# on disk), or via `scons docs`, which also regenerates that XML first so
+# the wiki pages never drift from it. Split into two Command nodes so a
+# plain build/`scons update_wiki` never pulls in the flatpak --doctool step
+# above.
 wiki_action = "{} tools/generate_docs.py --src doc_classes --out docs".format(sys.executable)
 
 update_wiki = Command("update_wiki", None, wiki_action)
 AlwaysBuild(update_wiki)
-Default(update_wiki)
 
 update_wiki_after_docs = Command("update_wiki_after_docs", None, wiki_action)
 AlwaysBuild(update_wiki_after_docs)

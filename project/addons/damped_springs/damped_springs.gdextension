@@ -1,0 +1,26 @@
+[configuration]
+
+entry_symbol = "damped_springs_library_init"
+compatibility_minimum = "4.5"
+reloadable = true
+
+[libraries]
+
+macos.debug = "./bin/libdamped_springs.macos.template_debug.universal.dylib"
+macos.release = "./bin/libdamped_springs.macos.template_release.universal.dylib"
+windows.debug.x86_64 = "./bin/damped_springs.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "./bin/damped_springs.windows.template_release.x86_64.dll"
+linux.debug.x86_64 = "./bin/libdamped_springs.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "./bin/libdamped_springs.linux.template_release.x86_64.so"
+android.debug.arm64 = "./bin/libdamped_springs.android.template_debug.arm64.so"
+android.release.arm64 = "./bin/libdamped_springs.android.template_release.arm64.so"
+ios.debug = "./bin/libdamped_springs.ios.template_debug.xcframework"
+ios.release = "./bin/libdamped_springs.ios.template_release.xcframework"
+web.debug.threads.wasm32 = "./bin/libdamped_springs.web.template_debug.wasm32.wasm"
+web.release.threads.wasm32 = "./bin/libdamped_springs.web.template_release.wasm32.wasm"
+web.debug.wasm32 = "./bin/libdamped_springs.web.template_debug.wasm32.nothreads.wasm"
+web.release.wasm32 = "./bin/libdamped_springs.web.template_release.wasm32.nothreads.wasm"
+
+[icons]
+
+DampedSpringParameters = "res://addons/damped_springs/spring_params.svg"

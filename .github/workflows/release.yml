@@ -1,14 +1,14 @@
 name: Release
 
-# Builds template_debug + template_release for linux/windows/macos, then
-# packages project/addons/DampedSprings/ (source-free, binaries for every
+# Builds template_debug + template_release for linux/windows/macos/android/ios (arm64)/web, then
+# packages project/addons/damped_springs/ (source-free, binaries for every
 # platform included) into a zip attached to a GitHub Release. The zip's
-# internal layout is addons/DampedSprings/..., so it extracts directly into
-# a project's root (res://). That zip is what's meant to be distributed --
-# either linked directly, or used as the "Custom" download URL in a Godot
-# Asset Library submission, since the Asset Library's GitHub-commit-based
-# download can't include build output that (deliberately) isn't committed
-# to the repo.
+# internal layout is addons/damped_springs/..., so it extracts directly
+# into a project's root (res://). That zip is what's meant to be
+# distributed -- either linked directly, or used as the "Custom" download
+# URL in a Godot Asset Library submission, since the Asset Library's
+# GitHub-commit-based download can't include build output that
+# (deliberately) isn't committed to the repo.
 on:
   push:
     tags:
@@ -24,18 +24,40 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.platform }}
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: linux
+          - name: linux
+            platform: linux
             os: ubuntu-latest
-          - platform: windows
+            args: ""
+          - name: windows
+            platform: windows
             os: windows-latest
-          - platform: macos
+            args: ""
+          - name: macos
+            platform: macos
             os: macos-latest
+            args: ""
+          - name: android-arm64
+            platform: android
+            os: ubuntu-latest
+            args: arch=arm64
+          - name: ios
+            platform: ios
+            os: macos-latest
+            args: arch=arm64
+          - name: web
+            platform: web
+            os: ubuntu-latest
+            args: ""
+          - name: web-nothreads
+            platform: web
+            os: ubuntu-latest
+            args: threads=no
     steps:
       - uses: actions/checkout@v7
         with:
@@ -49,6 +71,18 @@ jobs:
       - name: Install SCons
         run: pip install scons
 
+      - name: Install Emscripten
+        if: matrix.platform == 'web'
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 4.0.11
+
+      - name: Install Android NDK
+        if: matrix.platform == 'android'
+        shell: bash
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.1.13356709"
+
       # Pinned godot-cpp commit, so bumping the submodule invalidates the
       # cache key too.
       - name: Get submodule revisions
@@ -60,9 +94,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .scons_cache
-          key: scons-release-${{ matrix.platform }}-${{ hashFiles('src/**', 'SConstruct') }}-${{ steps.submodules.outputs.hash }}
+          key: scons-release-${{ matrix.name }}-${{ hashFiles('src/**', 'SConstruct') }}-${{ steps.submodules.outputs.hash }}
           restore-keys: |
-            scons-release-${{ matrix.platform }}-
+            scons-release-${{ matrix.name }}-
 
       # Runs the standalone (no godot-cpp) test in tests/ against template_debug
       # as a sanity check before spending time on the release build.
@@ -70,22 +104,35 @@ jobs:
         env:
           SCONS_CACHE: ${{ github.workspace }}/.scons_cache
         run: |
-          scons platform=${{ matrix.platform }} target=template_debug
+          scons platform=${{ matrix.platform }} ${{ matrix.args }} target=template_debug
           scons tests
 
       - name: Build template_release
         env:
           SCONS_CACHE: ${{ github.workspace }}/.scons_cache
-        run: scons platform=${{ matrix.platform }} target=template_release
+        run: scons platform=${{ matrix.platform }} ${{ matrix.args }} target=template_release
+
+      - name: Wrap iOS dylibs in xcframeworks
+        if: matrix.platform == 'ios'
+        working-directory: project/addons/damped_springs/bin
+        run: |
+          for target in template_debug template_release; do
+            xcodebuild -create-xcframework \
+              -library libdamped_springs.ios.$target.arm64.dylib \
+              -output libdamped_springs.ios.$target.xcframework
+            rm libdamped_springs.ios.$target.arm64.dylib
+          done
 
       - name: Upload binaries
         uses: actions/upload-artifact@v7
         with:
-          name: dampedsprings-bin-${{ matrix.platform }}
+          name: damped-springs-bin-${{ matrix.name }}
           path: |
-            project/addons/DampedSprings/bin/*.so
-            project/addons/DampedSprings/bin/*.dll
-            project/addons/DampedSprings/bin/*.dylib
+            project/addons/damped_springs/bin/*.so
+            project/addons/damped_springs/bin/*.dll
+            project/addons/damped_springs/bin/*.dylib
+            project/addons/damped_springs/bin/*.xcframework
+            project/addons/damped_springs/bin/*.wasm
 
   package:
     name: Package addon
@@ -99,15 +146,15 @@ jobs:
       - name: Download binaries for every platform
         uses: actions/download-artifact@v8
         with:
-          pattern: dampedsprings-bin-*
-          path: project/addons/DampedSprings/bin
+          pattern: damped-springs-bin-*
+          path: project/addons/damped_springs/bin
           merge-multiple: true
 
       - name: Zip addon
         run: |
-          cp LICENSE project/addons/DampedSprings/LICENSE
+          cp LICENSE project/addons/damped_springs/LICENSE
           cd project
-          zip -r "${{ github.workspace }}/DampedSprings.zip" addons/DampedSprings
+          zip -r "${{ github.workspace }}/DampedSprings.zip" addons/damped_springs
 
       - name: Create release
         uses: softprops/action-gh-release@v3

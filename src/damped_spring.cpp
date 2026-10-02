@@ -1,5 +1,7 @@
 #include "damped_spring.h"
+
 #include "damped_spring_math.h"
+
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/error_macros.hpp>
 

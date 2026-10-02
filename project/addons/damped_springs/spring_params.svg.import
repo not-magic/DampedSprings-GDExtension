@@ -10,7 +10,7 @@ metadata={
 
 [deps]
 
-source_file="res://addons/DampedSprings/spring_params.svg"
+source_file="res://addons/damped_springs/spring_params.svg"
 dest_files=["res://.godot/imported/spring_params.svg-ad6f1118a04dc3a434ea4266f2f4696a.ctex"]
 
 [params]
